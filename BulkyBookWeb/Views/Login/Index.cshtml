@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirect Example</title>
+</head>
+<body>
+    <button type="button" id="redirectButton">Click to Redirect</button>
+
+    
+    <script>
+        /*
+        document.getElementById("redirectButton").addEventListener("click", function () {
+            // Make an AJAX call to the backend endpoint
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/Redirect/RedirectToAnotherPage", true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Redirect the user to the new page
+                    window.location.href = xhr.responseText;
+                }
+            };
+            xhr.send();
+        });*/
+    </script>
+
+    <script>
+        document.getElementById("redirectButton").addEventListener("click", function () {
+            // Make an AJAX call to the backend endpoint
+            var xhr = new XMLHttpRequest();
+            
+            
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Extract the token from the response URL
+                    
+                    //var token = new URL(xhr.responseText).searchParams.get("token");
+                    var jsonResponse = JSON.parse(xhr.responseText);
+                    var token = jsonResponse.Token;
+                    
+                    // You can use the token as needed, e.g., decode and process the payload
+                    // For demonstration, let's just display the token for now
+                    alert("Received Token: " + token);
+                }
+            };
+            xhr.open("GET", "/Login/RedirectToAnotherPage", true);
+            xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+            xhr.setRequestHeader("Access-Control-Allow-Methods", "POST, PUT, GET, OPTIONS, DELETE");
+            xhr.setRequestHeader("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, observe");
+            xhr.send();
+        });
+    </script>
+</body>
+</html>
+
