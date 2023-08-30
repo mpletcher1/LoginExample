@@ -32,7 +32,15 @@
         document.getElementById("redirectButton").addEventListener("click", function () {
             // Make an AJAX call to the backend endpoint
             var xhr = new XMLHttpRequest();
-            
+            var data = "acr_values=http%3A%2F%2Fidmanagement.gov%2Fns%2Fassurance%2Fial%2F2&" +
+                "client_id=urn%3Agov%3Agsa%3Aopenidconnect.profiles%3Asp%3Asso%3Adept_state%3Apassportwizard&" +
+                "nonce=hithereIamnoncenoncenoncenoncenonce&" +
+                "prompt=select_account&" +
+                "redirect_uri=https%3A%2F%2Flocalhost%3A44313%2FLogin%2FResult&" +
+                "response_type=code&" +
+                "scope=openid+email&" +
+                "state=abcdefghijklmnopabcdefghijklmnop";
+            var linktogo = "https://idp.int.identitysandbox.gov/openid_connect/authorize?";
             
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4 && xhr.status === 200) {
@@ -48,18 +56,20 @@
                    // var newWindow = window.location.replace(xhr.responseURL)
                     //var newWindow = window.open(, "response", "resizable=yes");
                     //var linkToFollow = parseFloat(document.getElementById("CC_id").value);
-                    var linkToFollow = '@ViewBag.ReturnUrl';
+                    var linkToFollow = linktogo + data;
                     if (linkToFollow != "") {
                         var newWindow = window.location.replace(linkToFollow);
                     }
                     
                 }
             };
-            xhr.open("GET", "/Login/RedirectToAnotherPage", true);
+            
+            //xhr.open("POST", "/Login/RedirectToAnotherPage", true);
+            xhr.open("GET", linktogo + data, true);
             xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
             xhr.setRequestHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
             xhr.setRequestHeader("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization");
-            console.log(xhr.statusText)
+            console.log(xhr.statusText);
             xhr.send();
         });
     </script>
