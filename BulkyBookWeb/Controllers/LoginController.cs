@@ -18,6 +18,9 @@ using System.Text.Json;
 using Newtonsoft.Json;
 using System.Net.Http.Json;
 using System.Net.NetworkInformation;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
+using System.Linq;
 
 namespace BulkyBookWeb.Controllers
 {
@@ -42,12 +45,27 @@ namespace BulkyBookWeb.Controllers
             public string? access_token {get; set;}
             public string? token_type {get; set;}
             public int expires_in {get; set;}
-            public string? id_token {get; set;}
+            public string id_token {get; set;}
 
             public override string ToString()
             {
                 return base.ToString();
             }
+        }
+
+        public class IDToken
+        {
+            public string sub { get; set;}
+            public string iss { get; set; }
+            public string acr { get; set; }
+            public string nonce { get; set; }
+            public string aud { get; set; }
+            public string jti { get; set; }
+            public string at_hash { get; set; }
+            public string c_hash { get; set; }
+            public Int64 exp { get; set; }
+            public Int64 iat { get; set; }
+            public Int64 nbf { get; set; }
         }
 
 
@@ -101,10 +119,99 @@ namespace BulkyBookWeb.Controllers
         public void HandleTokenInfo(TokenInfo token)
         {
             var idToken = token.id_token;
-            var rsaPrivKey = new RSACryptoServiceProvider();
-            rsaPrivKey.ImportFromPem(privKey);
+            string[] tokenParts = idToken.Split('.');
 
-            rsaPrivKey.Decrypt(idToken., true);
+            var rsa = new RSACryptoServiceProvider();
+            rsa.ImportParameters(
+                new RSAParameters()
+                {
+                    Modulus = WebEncoders.Base64UrlDecode(loginGovPubKey),
+                    Exponent = WebEncoders.Base64UrlDecode("AQAB")
+                });
+
+            var validationParameters = new TokenValidationParameters
+            {
+                RequireExpirationTime = true,
+                RequireSignedTokens = true,
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateLifetime = false,
+                IssuerSigningKey = new RsaSecurityKey(rsa)
+            };
+
+            var sha256 = SHA256.Create();
+            byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(tokenParts[0] + '.' + tokenParts[1]));
+
+            RSAPKCS1SignatureDeformatter rsaDeformatter = new RSAPKCS1SignatureDeformatter(rsa);
+            rsaDeformatter.SetHashAlgorithm("SHA256");
+            if (rsaDeformatter.VerifySignature(hash, WebEncoders.Base64UrlDecode(tokenParts[2])))
+            {
+                Console.WriteLine("Signature is verified");
+                var handler = new JwtSecurityTokenHandler();
+                SecurityToken validatedSecurityToken = null;
+                handler.ValidateToken(idToken, validationParameters, out validatedSecurityToken);
+                JwtSecurityToken validatedJwt = validatedSecurityToken as JwtSecurityToken;
+                var dict = validatedJwt.Payload.ToArray();
+                IDToken tok = new IDToken();
+                foreach (var i in dict)
+                {
+                    AssignTokenValue(i, tok);
+                }
+
+                var jsonStr = validatedJwt.ToString();
+
+                // From here need to get the user attributes from User Attr Endpoint 
+                // Use this to get it via HTTP GET
+                /*
+                 * GET https://idp.int.identitysandbox.gov/api/openid_connect/userinfo
+                 * Authorization: Bearer (token.access_token)
+                 * 
+                 */
+                // token.access_token will have
+            }
+
+        }
+
+        private void AssignTokenValue(KeyValuePair<string, object> kv, IDToken tok)
+        {
+            switch (kv.Key)
+            {
+                case "sub":
+                    tok.sub = kv.Value.ToString();
+                    break;
+                case "iss":
+                    tok.iss = kv.Value.ToString();
+                    break;
+                case "acr":
+                    tok.acr = kv.Value.ToString();
+                    break;
+                case "nonce":
+                    tok.nonce = kv.Value.ToString();
+                    break;
+                case "aud":
+                    tok.aud = kv.Value.ToString();
+                    break;
+                case "jti":
+                    tok.jti = kv.Value.ToString();
+                    break;
+                case "at_hash":
+                    tok.at_hash = kv.Value.ToString();
+                    break;
+                case "c_hash":
+                    tok.c_hash = kv.Value.ToString();
+                    break;
+                case "exp":
+                    tok.exp = Convert.ToInt64(kv.Value);
+                    break;
+                case "iat":
+                    tok.iat = Convert.ToInt64(kv.Value);
+                    break;
+                case "nbf":
+                    tok.nbf = Convert.ToInt64(kv.Value);
+                    break;
+                default:
+                    break;
+            }
         }
 
         public void TokenResult(HttpResponseMessage response)
@@ -116,7 +223,7 @@ namespace BulkyBookWeb.Controllers
             };
             //var url = Request.GetDisplayUrl();
             var jsonToken = response.Content.ReadAsStringAsync().Result;
-            TokenInfo resp = JsonConvert.DeserializeObject<TokenInfo>(jsonToken);
+            TokenInfo? resp = JsonConvert.DeserializeObject<TokenInfo>(jsonToken);
 
             if (resp != null)
             {
