@@ -6,12 +6,6 @@ namespace BulkyBookWeb.Controllers
 {
     public class ResultController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public ResultController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
 
         public IActionResult Index()
         {

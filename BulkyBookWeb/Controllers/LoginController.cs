@@ -21,6 +21,9 @@ using System.Net.NetworkInformation;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using System.Linq;
+using System.Net.Http.Headers;
+using System.Net.Http;
+using Microsoft.CodeAnalysis.Text;
 
 namespace BulkyBookWeb.Controllers
 {
@@ -32,51 +35,17 @@ namespace BulkyBookWeb.Controllers
 
         private static string privKeyPath = @"C:\Users\mattp\Dropbox\PC\Documents\private.pem";
         private static string privKey = System.IO.File.ReadAllText(privKeyPath);
-
         private static string loginGovPubKey = "qRoNXLUugbenQTBHswfiGoKuhKkvUPP6A1GllxEZEAX86FiFSrXr7x_suHZ4cBytsmtFuYGymJZAGTk7DLzvMW0BHZpVtMZ3qvBDsYbNQGN4oLLxIy5-Q1rT1XTZhNkJwaj7gndbKHpQ33FqNQphhdchXB28N9GekDCJKzwEEThhxHkBxhq-hYAkd6rZ2fLiiyd5C4MSO0pMB-E_oGrNdYhCoydaFqVAhojn8am9za-JkjZIE9-Shlv_CQGt0yr91h3agVxeR2aeuZjQmvrhALJUeeJxG4D_Xl-w4v_O6nl0nllKXKHFxjP4ejDdNbht2a1L9BgJoYBjq6pUcWT49w";
+        
         public class UserInfo
         {
             public string UserName { get; set; }
             public string code { get; set; }
         }
 
-        public class TokenInfo
-        {
-            public string? access_token {get; set;}
-            public string? token_type {get; set;}
-            public int expires_in {get; set;}
-            public string id_token {get; set;}
-
-            public override string ToString()
-            {
-                return base.ToString();
-            }
-        }
-
-        public class IDToken
-        {
-            public string sub { get; set;}
-            public string iss { get; set; }
-            public string acr { get; set; }
-            public string nonce { get; set; }
-            public string aud { get; set; }
-            public string jti { get; set; }
-            public string at_hash { get; set; }
-            public string c_hash { get; set; }
-            public Int64 exp { get; set; }
-            public Int64 iat { get; set; }
-            public Int64 nbf { get; set; }
-        }
-
-
         //public Random random = new Random();
 
-        public static string GetRandomString(int len)
-        {
-            var r = new Random();
-            var str = new String(Enumerable.Range(0, len).Select(n => (Char)(r.Next(32, 127))).ToArray());
-            return str;
-        }
+        
 
         public LoginController(ApplicationDbContext db)
         {
@@ -116,8 +85,9 @@ namespace BulkyBookWeb.Controllers
  
         }
 
-        public void HandleTokenInfo(TokenInfo token)
+        public IDToken HandleTokenInfo(TokenInfo token)
         {
+            IDToken resultingToken = new IDToken();
             var idToken = token.id_token;
             string[] tokenParts = idToken.Split('.');
 
@@ -155,11 +125,9 @@ namespace BulkyBookWeb.Controllers
                 IDToken tok = new IDToken();
                 foreach (var i in dict)
                 {
-                    AssignTokenValue(i, tok);
+                    TokenExtensions.AssignTokenValue(i, tok);
                 }
-
-                var jsonStr = validatedJwt.ToString();
-
+                resultingToken = tok;
                 // From here need to get the user attributes from User Attr Endpoint 
                 // Use this to get it via HTTP GET
                 /*
@@ -170,52 +138,29 @@ namespace BulkyBookWeb.Controllers
                 // token.access_token will have
             }
 
+            return resultingToken;
+
         }
 
-        private void AssignTokenValue(KeyValuePair<string, object> kv, IDToken tok)
+        public void RetrieveUserAttributes(TokenInfo token)
         {
-            switch (kv.Key)
-            {
-                case "sub":
-                    tok.sub = kv.Value.ToString();
-                    break;
-                case "iss":
-                    tok.iss = kv.Value.ToString();
-                    break;
-                case "acr":
-                    tok.acr = kv.Value.ToString();
-                    break;
-                case "nonce":
-                    tok.nonce = kv.Value.ToString();
-                    break;
-                case "aud":
-                    tok.aud = kv.Value.ToString();
-                    break;
-                case "jti":
-                    tok.jti = kv.Value.ToString();
-                    break;
-                case "at_hash":
-                    tok.at_hash = kv.Value.ToString();
-                    break;
-                case "c_hash":
-                    tok.c_hash = kv.Value.ToString();
-                    break;
-                case "exp":
-                    tok.exp = Convert.ToInt64(kv.Value);
-                    break;
-                case "iat":
-                    tok.iat = Convert.ToInt64(kv.Value);
-                    break;
-                case "nbf":
-                    tok.nbf = Convert.ToInt64(kv.Value);
-                    break;
-                default:
-                    break;
-            }
+            var url = "https://idp.int.identitysandbox.gov/api/openid_connect/userinfo?";
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(token.token_type, token.access_token);
+            var response = client.GetAsync(url).Result;
+            //Parse JSON response here
+            Console.WriteLine(response);
+            var jsonToken = response.Content.ReadAsStringAsync().Result;
+            UserAttributes? resp = JsonConvert.DeserializeObject<UserAttributes>(jsonToken);
+            Console.WriteLine(resp);
+            ViewBag.UserAttributes = resp;
         }
 
+       
+        // Want to change this to IActionResult to display the resulting info in the
+        // 'Results' View.
         public void TokenResult(HttpResponseMessage response)
         {
+
             var options = new JsonSerializerSettings
             {
                 MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
@@ -227,11 +172,25 @@ namespace BulkyBookWeb.Controllers
 
             if (resp != null)
             {
-                HandleTokenInfo(resp);
+                ViewBag.TokenInfo = resp;
+                var idToken = HandleTokenInfo(resp);
+                if (idToken != null)
+                {
+                    ViewBag.IDToken = idToken;
+                    RetrieveUserAttributes(resp);
+                    //return View("~/Views/Result/Index.cshtml");
+                    //return View();
+                }
+                else
+                {
+                    Console.WriteLine("Invalid or no token endpoint reponse");
+                    //return View("~/Views/Shared/Error.cshtml");
+                }
             }
             else
             {
                 Console.WriteLine("Invalid token response");
+                //return View("~/Views/Shared/Error.cshtml");
             }
             
   
@@ -246,11 +205,9 @@ namespace BulkyBookWeb.Controllers
             var tokenHandler = new JwtSecurityTokenHandler();
             var rsaPrivKey = new RSACryptoServiceProvider();
             rsaPrivKey.ImportFromPem(privKey);
-
             client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/json");
-           
 
-            var randomJTI = GetRandomString(20);
+            var randomJTI = StringExtensions.GetRandomString(20);
             var expirationTime = (int)(DateTime.Now.AddMinutes(5).ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds;
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -266,7 +223,6 @@ namespace BulkyBookWeb.Controllers
                 SigningCredentials = new SigningCredentials(new RsaSecurityKey(rsaPrivKey), SecurityAlgorithms.RsaSha256Signature)
             };
 
-            Console.WriteLine(tokenDescriptor.ToString());
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
@@ -275,36 +231,9 @@ namespace BulkyBookWeb.Controllers
             var clientCode = "code=" + code + "&";
             var grant_type = "grant_type=authorization_code";
             var combinedClientInfoStr = client_assertion + client_assertion_type + clientCode + grant_type;
-            //var urik = Request.HttpContext.Request.GetDisplayUrl();
             // Redirect to the destination page with the token as a query parameter
-            //Response.BufferOutput = true;
-            var myData = new
-            {
-                client_assertion = client_assertion,
-                client_assertion_type = client_assertion_type,
-                code = clientCode, 
-                grant_type = grant_type
-            };
-
-            string message = System.Text.Json.JsonSerializer.Serialize(myData);
-            byte[] messageBytes = System.Text.Encoding.UTF8.GetBytes(message);
-            var content = new ByteArrayContent(messageBytes);
-            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-
-            //var response = client.PostAsync(loggedUser.serverUrl + "/api/v2/job", content).Result;
-            
-            
-            var dict = new Dictionary<string, string>{
-                //{"client_assertion", client_assertion},
-                {"client_assertion_type", client_assertion_type },
-                {"code", clientCode},
-                {"grant_type", grant_type}
-            };
-
-            var contentStr = new StringContent("");
-            //var content = new FormUrlEncodedContent(dict);
+            var contentStr = new StringContent(""); //Need empty content string here, as we are only sending URI with params.
             var response = await client.PostAsync("https://idp.int.identitysandbox.gov/api/openid_connect/token?" + combinedClientInfoStr, contentStr);
-            //Response.Redirect("https://idp.int.identitysandbox.gov/api/openid_connect/token" + combinedClientInfoStr);
             if (response.IsSuccessStatusCode)
             {
                 TokenResult(response);
@@ -314,7 +243,6 @@ namespace BulkyBookWeb.Controllers
                 // Handle error response
                 Console.WriteLine(response.ToString());
             }
-            
         }
 
 
@@ -328,89 +256,5 @@ namespace BulkyBookWeb.Controllers
             }
             return result;
         }
-
-        public void RedirectToAnotherPage()
-        {
-            var client = new HttpClient();
-            
-            var tokenStringPlain = "acr_values=http%3A%2F%2Fidmanagement.gov%2Fns%2Fassurance%2Fial%2F1&" +
-                        "client_id=urn%3Agov%3Agsa%3Aopenidconnect.profiles%3Asp%3Asso%3Adept_state%3Apassportwizard&" +
-                        "nonce=hithereIamnoncenoncenoncenoncenonce&" +
-                        "prompt=select_account&" +
-                        "redirect_uri=https%3A%2F%2Flocalhost%3A44313%2FLogin&" +
-                        "response_type=code&" +
-                        "scope=openid+email&" +
-                        "state=abcdefghijklmnopabcdefghijklmnop";
-            // Create a JWT token with a sample payload
-            
-            //var key = Convert.FromBase64String("your-secret-key"); // Replace with your secret key
-            
-
-            /*
-            expect(WebMock).to have_requested(:post, "#{root_url}/oauth/authenticate").
-                with(
-                  body: hash_including(
-                    {
-                        'username' => username,
-                      'password' => password,
-                      'grant_type' => 'implicit',
-                      'response_type' => 'token',
-                      'client_id' => client_id,
-                      'scope' => 'ivs.ippaas.apis',
-                    },
-                  ),
-                  headers:
-                    {
-                        'Content-Type': 'application/json; charset=utf-8',
-                  },
-                )
-            end
-            */
-            
-            //ViewBag.ReturnURL = "https://idp.int.identitysandbox.gov/openid_connect/authorize?" + tokenStringPlain;
-           
-            //var result = client.PostAsync("https://idp.int.identitysandbox.gov/openid_connect/authorize?" + tokenStringPlain, "application/x-www-form-urlencoded");
-            //Console.WriteLine(result);
-
-            //Redirect("https://idp.int.identitysandbox.gov/openid_connect/authorize?" + tokenStringPlain);
-            //response.ToString();
-            
-           // Response.OnCompleted(getResponseInfo());
-            //return Response.;
-            //return Json(new { Token = tokenString });
-        }
-
-        /*
-
-        static async Task<Uri> RedirectLoginPageAsync(string uri, string jwtInfo)
-        {
-            HttpResponseMessage response = await client.PostAsJsonAsync(
-                "api/products", product);
-            response.EnsureSuccessStatusCode();
-
-            // return URI of the created resource.
-            return response.Headers.Location;
-        }
-
-        static async Task<UserInfo> GetProductAsync(string path)
-        {
-            Product product = null;
-            HttpResponseMessage response = await client.GetAsync(path);
-            if (response.IsSuccessStatusCode)
-            {
-                product = await response.Content.ReadAsAsync<Product>();
-            }
-            return product;
-        }
-
-        
-        public Func<string,Task> getResponseInfo()
-        {
-            return 
-        }
-
-        */
-
-
     }
 }

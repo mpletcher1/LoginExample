@@ -11,7 +11,10 @@
 <body>
     <button type="button" id="redirectButton">Click to Redirect</button>
     
-    @Html.Hidden("CC_id", (string)ViewBag.ReturnURL);
+    @Html.Hidden("CC_id", (string)ViewBag.ReturnURL)
+
+
+    
 
     <script>
         document.getElementById("redirectButton").addEventListener("click", function () {
