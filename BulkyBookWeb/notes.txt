@@ -1,0 +1,44 @@
+﻿Black box the feature
+
+Implement middleware, in form of separate project
+Dll that can be plugged into app
+Httpmodule -> loginmodule
+Provide login url to intercept and analyze requests
+Intercept back, and in config file have token retrieval URL
+
+Separate DLL that can integrate into app and integrate intoo web.config to see if requests match login-specific URLs
+
+	• Json attribute to convert the name to 
+	
+Create browser token in response header for 
+
+
+Implement HTTP module ->> middleware
+	- Purpose is intercepting calls and analyzing for login, security, authorization token
+	- Request analyzer class, can be an extension
+		○ Request.isTokenRequest, request.isLoginRequest
+			§ Login.Process, etc
+			§ If is virtual token request -> process and put in response
+		○ Actual application code should have nothing to do with this stuff
+		○ Should only extract token info -> description in README file
+	- Has to work for WebForms and MVC buut wont work for ..NET core
+		○ How to implement middleware for .NET core - google this
+			§ Can it be done via web.config?
+
+
+	1. All code - create utilities in separate project, try to call from main proj
+	2. Try with InitialRespoonseToken 
+	3. In other project, implement HTTPmodule
+		a. Request analyzer
+			i. If request is login, use loginProcessor
+
+
+Create Project with features that accept requests
+	- Uusing request information will extract required argument and make web api call
+	- Separate DLL/project for these features for .NET CORE
+		
+	- ..NET framework will use HTTP module with common DLL
+	- Abstract the HTTP client 
+		○ Request Executor
+	- Static utility classes
+	- Static resources class (internal)

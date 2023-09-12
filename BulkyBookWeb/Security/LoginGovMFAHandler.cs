@@ -39,6 +39,7 @@ namespace BulkyBookWeb.Security
         [IgnoreAntiforgeryToken]
         public HttpResponseMessage GetInitialResponseToken(HttpClient client, string code, string state)
         {
+            // should look like this: return IntialRespoonseTokenRetriever.Retrieve(client, code, state)
             var tokenString = TokenExtensions.GenerateTokenStringFromParams(applicationClientID, tokenRequestEndpointURI, privKey);
 
             var client_assertion = StringExtensions.GenerateParametrizedURLEntry("client_assertion", tokenString);
