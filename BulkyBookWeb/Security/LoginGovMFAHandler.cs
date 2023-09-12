@@ -7,9 +7,9 @@ namespace BulkyBookWeb.Security
 {
     public class LoginGovMFAHandler
     {
-        private static readonly HttpClient client = new HttpClient();
 
-        private static string privKeyPath = @"C:\Users\mattp\Dropbox\PC\Documents\private.pem";
+        //private static string privKeyPath = @"C:\Users\mattp\Dropbox\PC\Documents\private.pem";
+        private static string privKeyPath = @"C:\Users\Matt\Documents\private.pem";
         private static string privKey = System.IO.File.ReadAllText(privKeyPath);
         private static string loginGovPubKey = "qRoNXLUugbenQTBHswfiGoKuhKkvUPP6A1GllxEZEAX86FiFSrXr7x_suHZ4cBytsmtFuYGymJZAGTk7DLzvMW0BHZpVtMZ3qvBDsYbNQGN4oLLxIy5-Q1rT1XTZhNkJwaj7gndbKHpQ33FqNQphhdchXB28N9GekDCJKzwEEThhxHkBxhq-hYAkd6rZ2fLiiyd5C4MSO0pMB-E_oGrNdYhCoydaFqVAhojn8am9za-JkjZIE9-Shlv_CQGt0yr91h3agVxeR2aeuZjQmvrhALJUeeJxG4D_Xl-w4v_O6nl0nllKXKHFxjP4ejDdNbht2a1L9BgJoYBjq6pUcWT49w";
         private static string? applicationClientID;
@@ -42,10 +42,10 @@ namespace BulkyBookWeb.Security
             // should look like this: return IntialRespoonseTokenRetriever.Retrieve(client, code, state)
             var tokenString = TokenExtensions.GenerateTokenStringFromParams(applicationClientID, tokenRequestEndpointURI, privKey);
 
-            var client_assertion = StringExtensions.GenerateParametrizedURLEntry("client_assertion", tokenString);
-            var client_assertion_type = StringExtensions.GenerateParametrizedURLEntry("client_assertion_type", clientAssertionType);
-            var clientCode = StringExtensions.GenerateParametrizedURLEntry("code", code);
-            var grant_type = StringExtensions.GenerateParametrizedURLEntry("grant_type", "authorization_code", true); //Last URI entry cannot have "&" on the end.
+            var client_assertion = LoginGov_Integration.StringExtensions.GenerateParametrizedURLEntry("client_assertion", tokenString);
+            var client_assertion_type = LoginGov_Integration.StringExtensions.GenerateParametrizedURLEntry("client_assertion_type", clientAssertionType);
+            var clientCode = LoginGov_Integration.StringExtensions.GenerateParametrizedURLEntry("code", code);
+            var grant_type = LoginGov_Integration.StringExtensions.GenerateParametrizedURLEntry("grant_type", "authorization_code", true); //Last URI entry cannot have "&" on the end.
             var combinedClientInfoStr = client_assertion + client_assertion_type + clientCode + grant_type;
 
             // Redirect to the destination page with the token as a query parameter

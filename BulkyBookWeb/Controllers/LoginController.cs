@@ -26,7 +26,8 @@ namespace BulkyBookWeb.Controllers
 
         private static readonly HttpClient client = new HttpClient();
 
-        private static string privKeyPath = @"C:\Users\mattp\Dropbox\PC\Documents\private.pem";
+        //private static string privKeyPath = @"C:\Users\mattp\Dropbox\PC\Documents\private.pem";
+        private static string privKeyPath = @"C:\Users\Matt\Documents\private.pem";
         private static string applicationClientID = "urn:gov:gsa:openidconnect.profiles:sp:sso:dept_state:passportwizard";
 
         public LoginGovMFAHandler MFAHandler = new LoginGovMFAHandler(privKeyPath, applicationClientID);
@@ -71,9 +72,9 @@ namespace BulkyBookWeb.Controllers
         /// <returns> Results view following successful login procedure. </returns>
         public IActionResult Result()
         {
-            string code = StringExtensions.GetUrlParameter(Request, "code");
-            string state = StringExtensions.GetUrlParameter(Request, "state");
-            string error = StringExtensions.GetUrlParameter(Request, "error");
+            string code = LoginGov_Integration.StringExtensions.GetUrlParameter(Request, "code");
+            string state = LoginGov_Integration.StringExtensions.GetUrlParameter(Request, "state");
+            string error = LoginGov_Integration.StringExtensions.GetUrlParameter(Request, "error");
 
             if (MFAHandler.VerifyCodeAndState(code, state))
             {
@@ -90,7 +91,7 @@ namespace BulkyBookWeb.Controllers
             }
             else if (!string.IsNullOrEmpty(error))
             {
-                string errorDescription = StringExtensions.GetUrlParameter(Request, "error_description");
+                string errorDescription = LoginGov_Integration.StringExtensions.GetUrlParameter(Request, "error_description");
                 Console.WriteLine(error);
                 TempData["ErrorState"] = error;
                 return RedirectToAction("Index", "Login", null);

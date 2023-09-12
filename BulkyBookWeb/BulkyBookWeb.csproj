@@ -18,4 +18,10 @@
     <PackageReference Include="System.Security.Cryptography.OpenSsl" Version="5.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="LoginGov_Integration">
+      <HintPath>..\..\Login.Gov_Integration\Login.Gov_Integration\obj\Debug\net6.0\LoginGov_Integration.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

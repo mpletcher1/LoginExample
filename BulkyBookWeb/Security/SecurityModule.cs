@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Hosting.Server;
 
 namespace BulkyBookWeb.Security
 {
-    
+    /*
     public class SecurityModule : IHttpModule
     {
         public SecurityModule() { }
@@ -39,5 +39,5 @@ namespace BulkyBookWeb.Security
         public void Dispose { }
     }
     
-    
+    */
 }

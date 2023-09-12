@@ -1,5 +1,4 @@
 ﻿using BulkyBookWeb.Models;
-using Humanizer;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -120,8 +119,9 @@ namespace BulkyBookWeb.Extensions
             var tokenHandler = new JwtSecurityTokenHandler();
             var rsaPrivKey = new RSACryptoServiceProvider();
             rsaPrivKey.ImportFromPem(privKey);
-            
-            var randomJTI = StringExtensions.GetRandomString(20);
+
+            var randomJTI = LoginGov_Integration.StringExtensions.GetRandomString(20);
+                //StringExtensions.GetRandomString(20);
             var expirationTime = ((int)(DateTime.Now.AddMinutes(5).ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds).ToString();
             var tokenDescriptor = new SecurityTokenDescriptor
             {
