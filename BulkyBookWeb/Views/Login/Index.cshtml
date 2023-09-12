@@ -11,6 +11,13 @@
 <body>
     <button type="button" id="redirectButton">Click to Redirect</button>
     
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            @TempData["ErrorState"]
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
     @Html.Hidden("CC_id", (string)ViewBag.ReturnURL)
 
 
@@ -47,6 +54,10 @@
             console.log(xhr.statusText);
             xhr.send();
         });
+    </script>
+    <script>
+        $('.alert').alert();
+        $(".alert").alert('close');
     </script>
 </body>
 </html>

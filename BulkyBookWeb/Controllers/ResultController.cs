@@ -17,6 +17,11 @@ namespace BulkyBookWeb.Controllers
             return View();
         }
 
+        public IActionResult PersonalInformation(UserAttributes userAttr)
+        {
+            return View();
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

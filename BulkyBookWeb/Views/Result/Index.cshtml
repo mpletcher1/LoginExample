@@ -17,15 +17,20 @@
     <div class="container">
         <div class="row">
             <div class="col-sm-4">
-                @{
-                    var tokenData = ViewBag.TokenInfo;
-                }
-                <h3>Access Token: @tokenData.access_token</h3>
-                <h3></h3>
+                    
+                <h3>First Name: @TempData["GivenName"]</h3>
+                <h3>Last Name: @TempData["FamilyName"]</h3>
+                <h3>Email: @TempData["Email"]</h3>
+                <h3>Phone: @TempData["Phone"]</h3>
+                <h3>Phone Verified?: @TempData["PhoneVerified"]</h3>
+                <h3>Iss: @TempData["Iss"]</h3>
+                <h3>Social Security Number: @TempData["SSN"]</h3>
+                <p>bottom text</p>
+
             </div>
         </div>
     </div>
 
 </body>
 
-
+</html>
